@@ -15,11 +15,11 @@ req() { # method path token data
 tok() { sed -E 's/.*"token":"([^"]+)".*/\1/'; }
 
 echo "=== 1. 三种角色登录 + 获取当前用户 ===" | tee -a "$EV"
-ADMIN=$(req POST /api/auth/login "" '{"studentNo":"admin","password":"CHANGE_ME"}')
-LEADER=$(req POST /api/auth/login "" '{"studentNo":"20230001","password":"CHANGE_ME"}')
-PARTICIPANT=$(req POST /api/auth/login "" '{"studentNo":"20230002","password":"CHANGE_ME"}')
-STUDENT=$(req POST /api/auth/login "" '{"studentNo":"20230101","password":"CHANGE_ME"}')
-STUDENT2=$(req POST /api/auth/login "" '{"studentNo":"20230102","password":"CHANGE_ME"}')
+ADMIN=$(req POST /api/auth/login "" '{"studentNo":"admin","password":"123456"}')
+LEADER=$(req POST /api/auth/login "" '{"studentNo":"20230001","password":"123456"}')
+PARTICIPANT=$(req POST /api/auth/login "" '{"studentNo":"20230002","password":"123456"}')
+STUDENT=$(req POST /api/auth/login "" '{"studentNo":"20230101","password":"123456"}')
+STUDENT2=$(req POST /api/auth/login "" '{"studentNo":"20230102","password":"123456"}')
 echo "admin登录: $ADMIN" | tee -a "$EV"
 echo "张明(发起负责人)登录: $LEADER" | tee -a "$EV"
 echo "李婷(参与负责人)登录: $PARTICIPANT" | tee -a "$EV"
@@ -49,7 +49,7 @@ JID=$(echo "$JOINT" | sed -E 's/.*"data":([0-9]+).*/\1/')
 echo "活动状态(应为1待社团确认): $(req GET /api/activity/$JID "$T_LEADER")" | tee -a "$EV"
 echo "受邀社团2(李婷)同意: $(req POST /api/activity/joint-confirm "$T_PART" "{\"activityId\":$JID,\"agree\":true}")" | tee -a "$EV"
 echo "任一待确认时提交审批(应被拒): $(req POST /api/activity/$JID/submit "$T_LEADER")" | tee -a "$EV"
-T_WANG=$(req POST /api/auth/login "" '{"studentNo":"20230003","password":"CHANGE_ME"}' | tok)
+T_WANG=$(req POST /api/auth/login "" '{"studentNo":"20230003","password":"123456"}' | tok)
 echo "受邀社团3(王强)同意: $(req POST /api/activity/joint-confirm "$T_WANG" "{\"activityId\":$JID,\"agree\":true}")" | tee -a "$EV"
 echo "全部确认后提交审批: $(req POST /api/activity/$JID/submit "$T_LEADER")" | tee -a "$EV"
 echo "管理员审批通过: $(req POST /api/activity/$JID/audit "$T_ADMIN" '{"approved":true}')" | tee -a "$EV"
