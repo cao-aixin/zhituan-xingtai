@@ -1,7 +1,8 @@
 ﻿﻿# 智慧社团Web系统（club-web）
 
-按《智慧社团Web系统 开发设计思路》全新实现，并已合并旧版工程 `zhituan-system` 的独有功能（换届管理、资料库），
-**当前为唯一工程目录**。旧版代码已备份至同级 `zhituan-system-backup/`（仅作历史回溯，不再维护）。
+校园社团智能协同系统：覆盖社团申请审核、成员管理、普通/联合活动全流程（发布 → 报名 → 签到 → 总结）、
+换届管理、社团资料库、站内消息与数据统计，并基于 Spring AI Tool Call 集成 8 个 AI 技能，
+支持学校管理员 / 社团负责人 / 学生三角色权限体系。
 
 ## 技术栈
 
@@ -26,14 +27,12 @@ club-web/
 │   └── upgrade_handover_resource.sql  # 存量库增量脚本（换届/资料库两表）
 ├── docs/
 │   ├── api.md                         # REST API 清单（前端对接用）
-│   ├── qa-report.md                   # QA 两轮回归报告
-│   └── test-evidence.txt              # curl 闭环测试证据
-├── test.sh                            # 可重复执行的闭环测试脚本
+│   └── login.yaml                     # 登录接口定义
+├── test.sh                            # 可重复执行的闭环测试脚本（证据输出到 docs/test-evidence.txt）
 ├── frontend/                          # Vue3 前端工程（源码）
 │   ├── src/views/                     # 页面：login/admin/clubManager/student/common
 │   ├── src/components/ai-generate-dialog.vue  # 复用的 AI 弹窗组件（7 种弹窗技能共用）
-│   ├── src/components/ai-chat-assistant.vue  # AI 活动问答助手（悬浮聊天面板，全角色可见）
-│   └── dist/                          # 构建产物
+│   └── src/components/ai-chat-assistant.vue  # AI 活动问答助手（悬浮聊天面板，全角色可见）
 └── src/main/java/com/club/
     ├── config/                 # Sa-Token拦截、CORS、全局异常、MP分页
     ├── controller/             # auth/user/club/member/activity/message/ai/file/handover/resource
@@ -58,14 +57,13 @@ club-web/
    ```bash
    mysql -uroot -p < db/init.sql
    ```
-2. **编译**：必须用 IDEA 内置 Maven（3.8.1），不要用 D:/xiaz/apache-maven（3.5.3 太旧）：
+2. **编译**：Maven 3.8+（或直接用 IDEA 内置 Maven）：
    ```bash
-   cd club-web
-   "D:/java/idea/IntelliJ IDEA 2022.3.2/plugins/maven/lib/maven3/bin/mvn.cmd" compile
+   mvn compile
    ```
-3. **启动**（重要：本机环境变量 `SERVER__PORT=0` 会覆盖 yml 中的 `server.port`，启动时必须显式指定）：
+3. **启动**：
    ```bash
-   SERVER__PORT=8092 "D:/java/idea/IntelliJ IDEA 2022.3.2/plugins/maven/lib/maven3/bin/mvn.cmd" spring-boot:run > backend-run.log 2>&1
+   mvn spring-boot:run
    ```
    服务地址：http://localhost:8092
 
@@ -95,14 +93,10 @@ spring.ai:
         model: ${AI_MODEL:deepseek-chat}
 ```
 
-> **⚠️ 当前状态（2026-09-12）：已在 application.yml 中内置 DeepSeek 真实 Key**，
-> AI 八场景（活动方案/运营分析/活动总结/个性化推荐/风险巡检/通知润色/联合方案/活动问答）
-> 均由真实大模型生成（source=AI大模型）。
-> **上传 Gitee 或公开仓库前，务必把 api-key 改回 `${AI_API_KEY:}` 占位符，防止 Key 泄漏被盗刷。**
-> 更换 Key 两种方式：① 环境变量 `AI_API_KEY=sk-xxx` 启动；② 直接改 yml 中占位符默认值。
-
-- 配置环境变量 `AI_API_KEY`（兼容 OpenAI 接口的服务均可：DeepSeek / 通义千问等）即启用真实大模型；
-  `AI_BASE_URL`、`AI_MODEL` 按服务商替换。
+- **Key 配置**：`api-key` 默认为占位符 `${AI_API_KEY:}`（**仓库不含任何真实密钥**），
+  通过环境变量 `AI_API_KEY=sk-xxx` 注入即可启用真实大模型；兼容 OpenAI 接口的服务均可
+  （DeepSeek / 通义千问等），`AI_BASE_URL`、`AI_MODEL` 按服务商替换。
+  也可直接把默认值写进 yml 占位符 `${AI_API_KEY:sk-你的key}`（切勿提交真实 Key 到公开仓库）。
 - **api-key 为空或调用失败/超时时，自动降级为本地模板生成**（复用同一套 Tool 方法，数据口径一致），
   返回内容带 `source` 标注（`AI大模型` / `本地降级模板`），不阻断任何业务。
 - 实现说明：因 Spring AI 的 OpenAI 自动装配在空 api-key 下会导致应用启动失败，
@@ -223,16 +217,10 @@ cp -r dist/* ../src/main/resources/static/
 - 演示账号见上方账号表，密码均为 `123456`。
 
 
-## 从旧版 zhituan-system 合并的功能（换届管理 + 资料库）
+## 换届管理 + 资料库
 
-> **合并状态（2026-09-14 完成）**：两个功能已移植完毕并实测通过，
-> 目录层面的合并也已收尾——旧工程 `zhituan-system` 已备份为同级 `zhituan-system-backup/`，
-> 原目录与顶层聚合 `pom.xml`（多模块聚合用，现已无用）已移除，**本目录为唯一工程**。
-> 合并前的差异分析结论：旧版其余功能（用户/社团/成员/活动/通知/审核等）新版均已有且更完善，
-> 故未重复移植，仅补入下述两个独有功能。
-
-以下两个旧版独有功能已按 club-web 新架构（`com.club` 包、MyBatis-Plus、Sa-Token、
-枚举规范、数据权限）完成移植，接口契约与旧版保持兼容：
+以下两个功能按 club-web 架构（`com.club` 包、MyBatis-Plus、Sa-Token、
+枚举规范、数据权限）实现：
 
 ### 1. 社团换届管理
 
@@ -272,10 +260,10 @@ cp -r dist/* ../src/main/resources/static/
   `views/clubManager/resourceLibrary.vue`（资料库页）、`api/index.js`、
   路由与侧边菜单（负责人角色可见）
 
-### 实测结论（2026-09-14，8092 端口）
+### 实测结论
 
 换届：负责人发起 200 → club.leader_id 变更、成员表升会长、自动授予 CLUB_LEADER、
 双方收到站内通知；其他社团负责人/学生越权 403；学号不存在 400。
 资料库：上传/列表/下载（内容一致、文件名 UTF-8）/删除（DB+磁盘同步清理）全链路 200；
 跨社团负责人与学生越权 403；非法分类 400。
-回归：登录、活动列表、AI 生成（DeepSeek 真实调用成功）、消息未读数均正常未受影响。
+回归：登录、活动列表、AI 生成、消息未读数均正常未受影响。

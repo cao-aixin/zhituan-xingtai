@@ -1,5 +1,5 @@
 ﻿server:
-  # 服务端口（注意：本机存在环境变量 SERVER__PORT 会覆盖此配置，启动时需显式 SERVER__PORT=8092）
+  # 服务端口
   port: 8092
 
 spring:
@@ -41,10 +41,10 @@ sa-token:
   is-print: false
 
 # Spring AI：OpenAI 兼容接口配置（DeepSeek / 通义千问均可）
-# 已配置 DeepSeek 真实 Key；⚠️ 上传 Gitee/公开仓库前请改回 ${AI_API_KEY:} 占位符，避免泄漏
+# api-key 通过环境变量 AI_API_KEY 注入；默认为空 = 自动降级为本地模板生成
 spring.ai:
   openai:
-    api-key:CHANGE_ME
+    api-key: ${AI_API_KEY:}                 # 默认空 -> 自动降级
     base-url: ${AI_BASE_URL:https://api.deepseek.com}
     chat:
       options:
